@@ -107,7 +107,7 @@ svg#graph:active{cursor:grabbing;}
 .related-link{display:block;font-size:12px;color:#185FA5;padding:3px 0;cursor:pointer;}
 .related-link:hover{text-decoration:underline;}
 .link-tools{margin-top:14px;padding-top:12px;border-top:1px solid var(--bd);display:flex;gap:8px;flex-wrap:wrap;}
-.link-btn{font-size:11px;color:var(--text);background:var(--bg2);border:1px solid var(--bd2);border-radius:var(--r);padding:4px 12px;cursor:pointer;}
+.link-btn{font-size:11px;color:var(--text);background:var(--bg2);border:1px solid var(--bd2);border-radius:var(--r);padding:4px 12px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:5px;}
 .link-btn:hover{background:var(--bg3);}
 .link-btn.cancel{color:#e24b4a;border-color:#f09595;background:transparent;}
 .link-btn.cancel:hover{background:#fcebeb;}
@@ -694,7 +694,7 @@ function openPanel(d) {
   const relHtml = rel.length
     ? `<div class="related-block"><p>BAĞLANTILI NOTLAR</p>${rel.map(t => `<span class="related-link" onclick="openByTitle('${t.replace(/'/g,"\\'")}')">→ ${t}</span>`).join('')}</div>`
     : '';
-  const openHtml = `<div class="link-tools"><button class="link-btn" onclick="openNotePage('${d.id}')"><i class="ti ti-external-link"></i> Yeni sayfada aç</button></div>`;
+  const openHtml = `<div class="link-tools"><a class="link-btn" href="${noteUrl(d.id)}" target="_blank" rel="noopener"><i class="ti ti-external-link"></i> Yeni sayfada aç</a></div>`;
   const linkHtml = linkModeSource?.id === d.id
     ? `<div class="link-tools"><button class="link-btn cancel" onclick="cancelLinkMode()">İptal</button></div>`
     : `<div class="link-tools"><button class="link-btn" onclick="startLinkMode('${d.id}')"><i class="ti ti-link"></i> Bu nota bağlantı ekle</button></div>`;
@@ -719,10 +719,6 @@ document.getElementById('panel-close').addEventListener('click', closePanel);
 window.openByTitle = function(title) {
   if (!nodeSel) return;
   nodeSel.each(d => { if (d.title === title) openPanel(d); });
-};
-
-window.openNotePage = function(id) {
-  window.open(noteUrl(id), '_blank');
 };
 
 function openInlineEditor() {
