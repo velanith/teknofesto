@@ -694,7 +694,7 @@ function openPanel(d) {
   const relHtml = rel.length
     ? `<div class="related-block"><p>BAĞLANTILI NOTLAR</p>${rel.map(t => `<span class="related-link" onclick="openByTitle('${t.replace(/'/g,"\\'")}')">→ ${t}</span>`).join('')}</div>`
     : '';
-  const openHtml = `<div class="link-tools"><a class="link-btn" href="${noteUrl(d.id)}" target="_blank" rel="noopener"><i class="ti ti-external-link"></i> Yeni sayfada aç</a></div>`;
+  const openHtml = `<div class="link-tools"><a class="link-btn" href="${noteUrl(d.id)}"><i class="ti ti-external-link"></i> Büyük sayfada aç</a></div>`;
   const linkHtml = linkModeSource?.id === d.id
     ? `<div class="link-tools"><button class="link-btn cancel" onclick="cancelLinkMode()">İptal</button></div>`
     : `<div class="link-tools"><button class="link-btn" onclick="startLinkMode('${d.id}')"><i class="ti ti-link"></i> Bu nota bağlantı ekle</button></div>`;
