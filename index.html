@@ -131,6 +131,8 @@ svg#graph:active{cursor:grabbing;}
   font-family:inherit;
 }
 .modal-box textarea{height:120px;resize:vertical;font-family:monospace;font-size:12px;}
+.md-tools{display:flex;justify-content:flex-end;margin:-2px 0 8px;}
+.hidden-file{display:none;}
 .file-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
 .file-row input{display:none;}
 .file-name{font-size:11px;color:var(--text3);font-family:monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -155,11 +157,13 @@ svg#graph:active{cursor:grabbing;}
 #note-page.open{display:block;}
 .note-shell{width:min(860px,calc(100vw - 32px));margin:0 auto;padding:24px 0 56px;}
 .note-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:18px;border-bottom:1px solid var(--bd);}
+.note-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
 .note-back{font-size:12px;color:var(--text2);text-decoration:none;border:1px solid var(--bd2);border-radius:var(--r);padding:6px 12px;display:inline-flex;align-items:center;gap:6px;}
 .note-back:hover{background:var(--bg2);color:var(--text);}
 .note-open-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .note-open-title{font-size:34px;line-height:1.15;margin:28px 0 12px;letter-spacing:0;}
 .note-body{font-size:16px;line-height:1.75;color:var(--text2);}
+.note-body img{max-width:100%;height:auto;border-radius:var(--r);border:1px solid var(--bd);margin:10px 0;}
 .note-body h1{font-size:30px;line-height:1.2;color:var(--text);margin:20px 0 12px;}
 .note-body h2{font-size:22px;line-height:1.25;color:var(--text);margin:24px 0 10px;}
 .note-body h3{font-size:18px;line-height:1.3;color:var(--text);margin:18px 0 8px;}
@@ -175,6 +179,16 @@ svg#graph:active{cursor:grabbing;}
 .note-related-title{font-size:11px;color:var(--text3);font-family:monospace;font-weight:700;letter-spacing:.06em;margin-bottom:8px;}
 .note-related a{display:block;color:#185FA5;text-decoration:none;font-size:14px;padding:5px 0;}
 .note-related a:hover{text-decoration:underline;}
+.note-edit{display:none;margin-top:24px;}
+.note-edit.open{display:block;}
+.note-edit label{font-size:11px;color:var(--text3);font-family:monospace;display:block;margin-bottom:4px;}
+.note-edit input,.note-edit textarea{
+  width:100%;font-size:14px;padding:9px 10px;
+  border:1px solid var(--bd2);border-radius:var(--r);
+  background:var(--bg2);color:var(--text);margin-bottom:12px;font-family:inherit;
+}
+.note-edit textarea{min-height:420px;resize:vertical;font-family:monospace;font-size:13px;line-height:1.55;}
+.note-edit-actions{display:flex;gap:8px;justify-content:flex-end;}
 </style>
 </head>
 <body>
@@ -223,11 +237,32 @@ svg#graph:active{cursor:grabbing;}
   <div class="note-shell">
     <div class="note-top">
       <a class="note-back" id="note-back" href="./index.html"><i class="ti ti-arrow-left"></i> Grafa dön</a>
-      <div class="note-open-meta" id="note-open-meta"></div>
+      <div class="note-actions">
+        <div class="note-open-meta" id="note-open-meta"></div>
+        <button class="btn-sec" id="note-edit-btn" type="button"><i class="ti ti-pencil"></i> Düzenle</button>
+      </div>
     </div>
-    <h1 class="note-open-title" id="note-open-title"></h1>
-    <div class="note-body" id="note-open-body"></div>
-    <div class="note-related" id="note-open-related"></div>
+    <div id="note-view">
+      <h1 class="note-open-title" id="note-open-title"></h1>
+      <div class="note-body" id="note-open-body"></div>
+      <div class="note-related" id="note-open-related"></div>
+    </div>
+    <div class="note-edit" id="note-edit">
+      <label>Başlık</label>
+      <input id="note-edit-title" />
+      <label>Etiket</label>
+      <input id="note-edit-tag" />
+      <label>İçerik (markdown)</label>
+      <div class="md-tools">
+        <button class="btn-sec" id="note-image-btn" type="button"><i class="ti ti-photo-plus"></i> Görsel ekle</button>
+        <input class="hidden-file" id="note-image" type="file" accept="image/*" />
+      </div>
+      <textarea id="note-edit-body"></textarea>
+      <div class="note-edit-actions">
+        <button class="btn-sec" id="note-edit-cancel" type="button">İptal</button>
+        <button class="btn-primary" id="note-edit-save" type="button">Kaydet</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -253,6 +288,10 @@ svg#graph:active{cursor:grabbing;}
     <datalist id="node-title-options"></datalist>
     <div class="selected-links" id="m-selected-links"></div>
     <label>İçerik (markdown)</label>
+    <div class="md-tools">
+      <button class="btn-sec" id="m-image-btn" type="button"><i class="ti ti-photo-plus"></i> Görsel ekle</button>
+      <input class="hidden-file" id="m-image" type="file" accept="image/*" />
+    </div>
     <textarea id="m-body" placeholder="**kalın**, *italic*, ## başlık, \`kod\`, - liste"></textarea>
     <div class="modal-actions">
       <button class="btn-sec" id="m-cancel">İptal</button>
@@ -286,6 +325,7 @@ let selectedId = null;
 let linkModeSource = null;
 let modalLinks = [];
 let notePageMode = false;
+let currentNotePageId = null;
 const NODE_W = 120;
 const NODE_H = 44;
 const LAYOUT_KEY = 'kg-node-positions-v1';
@@ -554,16 +594,20 @@ async function refresh() {
 }
 
 function renderNotePage(noteId) {
+  currentNotePageId = noteId;
   document.getElementById('app').style.display = 'none';
   document.getElementById('add-modal').classList.remove('show');
   const page = document.getElementById('note-page');
   const note = nodes.find(n => String(n.id) === String(noteId));
 
+  document.getElementById('note-view').style.display = 'block';
+  document.getElementById('note-edit').classList.remove('open');
   document.getElementById('note-back').href = graphUrl();
   page.classList.add('open');
   document.body.style.overflow = 'auto';
 
   if (!note) {
+    document.getElementById('note-edit-btn').style.display = 'none';
     document.getElementById('note-open-meta').innerHTML = '';
     document.getElementById('note-open-title').textContent = 'Not bulunamadi';
     document.getElementById('note-open-body').innerHTML = '<p>Bu not silinmis veya URL gecersiz olabilir.</p>';
@@ -572,6 +616,7 @@ function renderNotePage(noteId) {
     return;
   }
 
+  document.getElementById('note-edit-btn').style.display = 'inline-flex';
   const u = userOf(note.author_code);
   const tagHtml = note.tag
     ? `<span class="tag-chip" style="background:${u.bg};color:${u.text};border-color:${u.color}">${escapeHtml(note.tag)}</span>`
@@ -638,6 +683,58 @@ window.openByTitle = function(title) {
 window.openNotePage = function(id) {
   window.open(noteUrl(id), '_blank');
 };
+
+document.getElementById('note-edit-btn').addEventListener('click', () => {
+  const note = nodes.find(n => String(n.id) === String(currentNotePageId));
+  if (!note) return;
+  document.getElementById('note-view').style.display = 'none';
+  document.getElementById('note-edit').classList.add('open');
+  document.getElementById('note-edit-title').value = note.title || '';
+  document.getElementById('note-edit-tag').value = note.tag || '';
+  document.getElementById('note-edit-body').value = note.content || '';
+  document.getElementById('note-edit-body').focus();
+});
+
+document.getElementById('note-edit-cancel').addEventListener('click', () => {
+  document.getElementById('note-edit').classList.remove('open');
+  document.getElementById('note-view').style.display = 'block';
+});
+
+document.getElementById('note-edit-save').addEventListener('click', async () => {
+  const note = nodes.find(n => String(n.id) === String(currentNotePageId));
+  if (!note) return;
+
+  const title = document.getElementById('note-edit-title').value.trim();
+  const tag = document.getElementById('note-edit-tag').value.trim();
+  const content = document.getElementById('note-edit-body').value.trim();
+  if (!title) return;
+
+  const oldTitle = note.title;
+  const { data: updated, error } = await sb.from('nodes')
+    .update({ title, tag, content })
+    .eq('id', note.id)
+    .select()
+    .single();
+  if (error) {
+    alert('Not kaydedilemedi.');
+    return;
+  }
+
+  if (oldTitle !== title) {
+    await Promise.all([
+      sb.from('edges').update({ source: title }).eq('source', oldTitle),
+      sb.from('edges').update({ target: title }).eq('target', oldTitle),
+    ]);
+  }
+
+  const data = await fetchAll();
+  const positions = loadPositions();
+  nodes = data.nodes.map(n => applySavedPosition(n, positions));
+  edges = data.edges;
+  currentNotePageId = updated.id;
+  history.replaceState(null, '', noteUrl(updated.id));
+  renderNotePage(updated.id);
+});
 
 function updateNodeStates() {
   if (!nodeSel) return;
@@ -714,6 +811,21 @@ document.getElementById('m-file').addEventListener('change', async e => {
   document.getElementById('m-file-name').textContent = file.name;
   document.getElementById('m-body').value = content;
   if (!titleEl.value.trim()) titleEl.value = titleFromFile(file.name, content);
+});
+
+document.getElementById('m-image-btn').addEventListener('click', () => {
+  document.getElementById('m-image').click();
+});
+document.getElementById('m-image').addEventListener('change', e => {
+  insertImageIntoTextarea(e.target.files[0], 'm-body');
+  e.target.value = '';
+});
+document.getElementById('note-image-btn').addEventListener('click', () => {
+  document.getElementById('note-image').click();
+});
+document.getElementById('note-image').addEventListener('change', e => {
+  insertImageIntoTextarea(e.target.files[0], 'note-edit-body');
+  e.target.value = '';
 });
 
 document.getElementById('m-link-add').addEventListener('click', addModalLinkFromInput);
@@ -796,6 +908,34 @@ function titleFromFile(filename, content) {
   const heading = content.match(/^#\s+(.+)$/m);
   if (heading) return heading[1].trim();
   return filename.replace(/\.(md|markdown)$/i, '').replace(/[-_]+/g, ' ').trim();
+}
+
+function insertAtCursor(textarea, text) {
+  const start = textarea.selectionStart ?? textarea.value.length;
+  const end = textarea.selectionEnd ?? textarea.value.length;
+  textarea.value = textarea.value.slice(0, start) + text + textarea.value.slice(end);
+  textarea.selectionStart = textarea.selectionEnd = start + text.length;
+  textarea.focus();
+}
+
+function insertImageIntoTextarea(file, textareaId) {
+  if (!file) return;
+  if (!file.type.startsWith('image/')) {
+    alert('Lütfen bir görsel dosyası seç.');
+    return;
+  }
+  if (file.size > 1_500_000) {
+    alert('Görsel çok büyük. Şimdilik 1.5 MB altı bir görsel seç.');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    const textarea = document.getElementById(textareaId);
+    const alt = file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ');
+    insertAtCursor(textarea, `\n![${alt}](${reader.result})\n`);
+  };
+  reader.readAsDataURL(file);
 }
 
 function escapeHtml(value) {
