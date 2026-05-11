@@ -20,8 +20,25 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);height:100dvh;overflow:hidden;}
 
+/* Access */
+#access-screen{display:flex;align-items:center;justify-content:center;height:100dvh;padding:20px;}
+.access-box{width:min(340px,100%);}
+.access-title{font-size:22px;font-weight:700;margin-bottom:6px;}
+.access-sub{font-size:12px;color:var(--text3);font-family:monospace;margin-bottom:18px;}
+.access-form{display:flex;gap:8px;}
+.access-form input{
+  flex:1;min-width:0;font-size:14px;padding:9px 10px;
+  border:1px solid var(--bd2);border-radius:var(--r);
+  background:var(--bg2);color:var(--text);
+}
+.access-form button{
+  font-size:12px;padding:9px 14px;border-radius:var(--r);
+  cursor:pointer;background:var(--text);color:var(--bg);border:none;font-weight:600;
+}
+.access-error{min-height:18px;margin-top:8px;font-size:11px;color:#e24b4a;font-family:monospace;}
+
 /* App */
-#app{display:flex;flex-direction:column;height:100dvh;}
+#app{display:none;flex-direction:column;height:100dvh;}
 #toolbar{
   display:flex;align-items:center;gap:8px;
   padding:9px 14px;border-bottom:1px solid var(--bd);
@@ -162,6 +179,19 @@ svg#graph:active{cursor:grabbing;}
 </head>
 <body>
 
+<!-- ── ACCESS SCREEN ── -->
+<div id="access-screen">
+  <div class="access-box">
+    <div class="access-title">Knowledge Graph</div>
+    <div class="access-sub">ortak şifre ile giriş</div>
+    <form class="access-form" id="access-form">
+      <input id="access-pass" type="password" autocomplete="current-password" placeholder="şifre" />
+      <button type="submit">Gir</button>
+    </form>
+    <div class="access-error" id="access-error"></div>
+  </div>
+</div>
+
 <!-- ── APP ── -->
 <div id="app">
   <div id="toolbar">
@@ -257,6 +287,42 @@ let notePageMode = false;
 const NODE_W = 120;
 const NODE_H = 44;
 const LAYOUT_KEY = 'kg-node-positions-v1';
+const ACCESS_KEY = 'kg-access-ok-v1';
+const ACCESS_HASH = '69d96bc653cad2693a62d705d1b376fa8ff090a7e3032c37a2ba4ffa814a0ac6';
+
+async function sha256(text) {
+  const bytes = new TextEncoder().encode(text);
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function showApp() {
+  document.getElementById('access-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  initUserPicker();
+  initGraph();
+}
+
+document.getElementById('access-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const input = document.getElementById('access-pass');
+  const error = document.getElementById('access-error');
+  const ok = await sha256(input.value) === ACCESS_HASH;
+  if (!ok) {
+    error.textContent = 'şifre yanlış';
+    input.value = '';
+    input.focus();
+    return;
+  }
+  sessionStorage.setItem(ACCESS_KEY, '1');
+  showApp();
+});
+
+if (sessionStorage.getItem(ACCESS_KEY) === '1') {
+  showApp();
+} else {
+  document.getElementById('access-pass').focus();
+}
 
 // ── USER PICKER ─────────────────────────────────────────
 function setCurrentUser(user) {
@@ -730,8 +796,6 @@ window.deleteNode = async function(id, title) {
   closePanel();
 };
 
-initUserPicker();
-initGraph();
 </script>
 </body>
 </html>
