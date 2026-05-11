@@ -200,6 +200,7 @@ svg#graph:active{cursor:grabbing;}
     <div id="live-dot" title="canlı bağlantı"></div>
     <button class="tb-btn" id="reset-layout-btn" title="Dizilimi sıfırla"><i class="ti ti-layout-board-split"></i></button>
     <button class="tb-btn" id="add-btn"><i class="ti ti-plus"></i> Yeni not</button>
+    <button class="tb-btn" id="logout-btn" title="Çıkış"><i class="ti ti-logout"></i></button>
   </div>
   <div id="main">
     <div id="graph-area">
@@ -264,6 +265,7 @@ svg#graph:active{cursor:grabbing;}
 // ── CONFIG ──────────────────────────────────────────────
 const SUPABASE_URL  = 'https://unxyujcyomzjfpzksbjf.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVueHl1amN5b216amZwemtzYmpmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0OTcyNTgsImV4cCI6MjA5NDA3MzI1OH0.5kHixsH8YUBMrV-CxqaJ5VmiXmWKrQOZW2Ycr0KtPLE';
+const AUTH_EMAIL    = 'teknofesto@example.com';
 
 // 5 kullanıcı — isim ve renk kodunu değiştir
 const USERS = [
@@ -287,16 +289,11 @@ let notePageMode = false;
 const NODE_W = 120;
 const NODE_H = 44;
 const LAYOUT_KEY = 'kg-node-positions-v1';
-const ACCESS_KEY = 'kg-access-ok-v1';
-const ACCESS_HASH = '69d96bc653cad2693a62d705d1b376fa8ff090a7e3032c37a2ba4ffa814a0ac6';
-
-async function sha256(text) {
-  const bytes = new TextEncoder().encode(text);
-  const digest = await crypto.subtle.digest('SHA-256', bytes);
-  return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('');
-}
+let appStarted = false;
 
 function showApp() {
+  if (appStarted) return;
+  appStarted = true;
   document.getElementById('access-screen').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
   initUserPicker();
@@ -307,22 +304,41 @@ document.getElementById('access-form').addEventListener('submit', async e => {
   e.preventDefault();
   const input = document.getElementById('access-pass');
   const error = document.getElementById('access-error');
-  const ok = await sha256(input.value) === ACCESS_HASH;
-  if (!ok) {
-    error.textContent = 'şifre yanlış';
+  error.textContent = '';
+
+  const { error: authError } = await sb.auth.signInWithPassword({
+    email: AUTH_EMAIL,
+    password: input.value,
+  });
+
+  if (authError) {
+    error.textContent = 'şifre yanlış veya auth hesabı hazır değil';
     input.value = '';
     input.focus();
     return;
   }
-  sessionStorage.setItem(ACCESS_KEY, '1');
   showApp();
 });
 
-if (sessionStorage.getItem(ACCESS_KEY) === '1') {
-  showApp();
-} else {
+(async function initAccess() {
+  const { data } = await sb.auth.getSession();
+  if (data.session) {
+    showApp();
+    return;
+  }
   document.getElementById('access-pass').focus();
-}
+})();
+
+document.getElementById('logout-btn').addEventListener('click', async () => {
+  await sb.auth.signOut();
+  location.href = graphUrl();
+});
+
+sb.auth.onAuthStateChange((_event, session) => {
+  if (session) {
+    showApp();
+  }
+});
 
 // ── USER PICKER ─────────────────────────────────────────
 function setCurrentUser(user) {
