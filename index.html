@@ -121,7 +121,11 @@ svg#graph:active{cursor:grabbing;}
 /* Add modal */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100;align-items:center;justify-content:center;}
 .modal-bg.show{display:flex;}
-.modal-box{background:var(--bg);border-radius:12px;border:1px solid var(--bd);padding:22px 24px;width:380px;max-width:94vw;}
+.modal-box{
+  background:var(--bg);border-radius:12px;border:1px solid var(--bd);
+  padding:22px 24px;width:min(920px,94vw);max-height:92dvh;
+  display:flex;flex-direction:column;overflow:hidden;
+}
 .modal-box h3{font-size:15px;font-weight:600;margin-bottom:14px;}
 .modal-box label{font-size:11px;color:var(--text3);font-family:monospace;display:block;margin-bottom:4px;}
 .modal-box input,.modal-box textarea{
@@ -130,8 +134,11 @@ svg#graph:active{cursor:grabbing;}
   background:var(--bg2);color:var(--text);margin-bottom:12px;
   font-family:inherit;
 }
-.modal-box textarea{height:120px;resize:vertical;font-family:monospace;font-size:12px;}
-.md-tools{display:flex;justify-content:flex-end;margin:-2px 0 8px;}
+.modal-box textarea{min-height:320px;resize:vertical;font-family:monospace;font-size:13px;line-height:1.55;}
+.editor-grid{display:grid;grid-template-columns:260px minmax(0,1fr);gap:18px;min-height:0;overflow:auto;padding-right:2px;}
+.editor-main{min-width:0;display:flex;flex-direction:column;min-height:0;}
+.editor-main textarea{flex:1;margin-bottom:0;}
+.editor-side{min-width:0;}
 .hidden-file{display:none;}
 .file-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
 .file-row input{display:none;}
@@ -148,14 +155,14 @@ svg#graph:active{cursor:grabbing;}
 .selected-link span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .selected-link button{border:none;background:none;color:var(--text3);cursor:pointer;font-size:14px;line-height:1;}
 .selected-link button:hover{color:var(--text);}
-.modal-actions{display:flex;gap:8px;justify-content:flex-end;}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;padding-top:14px;margin-top:14px;border-top:1px solid var(--bd);}
 .btn-primary{font-size:12px;padding:6px 16px;border-radius:var(--r);cursor:pointer;background:var(--text);color:var(--bg);border:none;font-weight:600;}
 .btn-sec{font-size:12px;padding:6px 14px;border-radius:var(--r);cursor:pointer;background:transparent;color:var(--text2);border:1px solid var(--bd2);}
 
 /* Note page */
 #note-page{display:none;height:100dvh;overflow-y:auto;background:var(--bg);}
 #note-page.open{display:block;}
-.note-shell{width:min(860px,calc(100vw - 32px));margin:0 auto;padding:24px 0 56px;}
+.note-shell{width:min(980px,calc(100vw - 32px));margin:0 auto;padding:24px 0 56px;}
 .note-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:18px;border-bottom:1px solid var(--bd);}
 .note-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
 .note-back{font-size:12px;color:var(--text2);text-decoration:none;border:1px solid var(--bd2);border-radius:var(--r);padding:6px 12px;display:inline-flex;align-items:center;gap:6px;}
@@ -187,8 +194,37 @@ svg#graph:active{cursor:grabbing;}
   border:1px solid var(--bd2);border-radius:var(--r);
   background:var(--bg2);color:var(--text);margin-bottom:12px;font-family:inherit;
 }
-.note-edit textarea{min-height:420px;resize:vertical;font-family:monospace;font-size:13px;line-height:1.55;}
-.note-edit-actions{display:flex;gap:8px;justify-content:flex-end;}
+.note-edit textarea{min-height:58dvh;resize:vertical;font-family:monospace;font-size:14px;line-height:1.6;}
+.note-edit-actions{display:flex;gap:8px;justify-content:flex-end;position:sticky;bottom:0;background:var(--bg);padding:12px 0 0;margin-top:4px;border-top:1px solid var(--bd);}
+
+@media (max-width: 900px) {
+  #toolbar{flex-wrap:wrap;padding:9px 10px;}
+  #toolbar h2{flex-basis:100%;}
+  #hint{display:none;}
+  #panel{position:absolute;right:0;top:0;bottom:0;z-index:20;box-shadow:-10px 0 24px rgba(0,0,0,.08);}
+  #panel.open{width:min(360px,92vw);}
+  .editor-grid{grid-template-columns:1fr;gap:10px;}
+  .modal-box{width:96vw;max-height:96dvh;padding:18px;}
+  .modal-box textarea{min-height:42dvh;}
+  .note-top{align-items:flex-start;flex-direction:column;}
+  .note-actions{width:100%;justify-content:space-between;}
+  .note-open-title{font-size:28px;}
+  .note-edit textarea{min-height:52dvh;}
+}
+
+@media (max-width: 560px) {
+  body{height:100dvh;}
+  .tb-btn{padding:6px 9px;}
+  #user-picker{order:2;}
+  #live-dot{order:3;}
+  .modal-bg{align-items:stretch;justify-content:stretch;}
+  .modal-box{width:100vw;max-width:none;max-height:none;height:100dvh;border-radius:0;border:none;}
+  .modal-actions,.note-edit-actions{justify-content:stretch;}
+  .modal-actions button,.note-edit-actions button{flex:1;}
+  .note-shell{width:calc(100vw - 24px);padding:16px 0 40px;}
+  .note-open-title{font-size:24px;}
+  .note-body{font-size:15px;}
+}
 </style>
 </head>
 <body>
@@ -253,10 +289,6 @@ svg#graph:active{cursor:grabbing;}
       <label>Etiket</label>
       <input id="note-edit-tag" />
       <label>İçerik (markdown)</label>
-      <div class="md-tools">
-        <button class="btn-sec" id="note-image-btn" type="button"><i class="ti ti-photo-plus"></i> Görsel ekle</button>
-        <input class="hidden-file" id="note-image" type="file" accept="image/*" />
-      </div>
       <textarea id="note-edit-body"></textarea>
       <div class="note-edit-actions">
         <button class="btn-sec" id="note-edit-cancel" type="button">İptal</button>
@@ -270,29 +302,31 @@ svg#graph:active{cursor:grabbing;}
 <div class="modal-bg" id="add-modal">
   <div class="modal-box">
     <h3>Yeni Not</h3>
-    <label>Markdown dosyası</label>
-    <div class="file-row">
-      <button class="btn-sec" id="m-file-btn" type="button"><i class="ti ti-file-import"></i> MD seç</button>
-      <span class="file-name" id="m-file-name"></span>
-      <input id="m-file" type="file" accept=".md,.markdown,text/markdown,text/plain" />
+    <div class="editor-grid">
+      <div class="editor-side">
+        <label>Markdown dosyası</label>
+        <div class="file-row">
+          <button class="btn-sec" id="m-file-btn" type="button"><i class="ti ti-file-import"></i> MD seç</button>
+          <span class="file-name" id="m-file-name"></span>
+          <input id="m-file" type="file" accept=".md,.markdown,text/markdown,text/plain" />
+        </div>
+        <label>Başlık</label>
+        <input id="m-title" placeholder="notun adı" />
+        <label>Etiket</label>
+        <input id="m-tag" placeholder="proje, fikir, kişi, kaynak…" />
+        <label>Bağlantılar</label>
+        <div class="combo-row">
+          <input id="m-link-combo" list="node-title-options" placeholder="mevcut notlardan seç" />
+          <button class="btn-sec" id="m-link-add" type="button"><i class="ti ti-plus"></i> Ekle</button>
+        </div>
+        <datalist id="node-title-options"></datalist>
+        <div class="selected-links" id="m-selected-links"></div>
+      </div>
+      <div class="editor-main">
+        <label>İçerik (markdown)</label>
+        <textarea id="m-body" placeholder="**kalın**, *italic*, ## başlık, `kod`, - liste"></textarea>
+      </div>
     </div>
-    <label>Başlık</label>
-    <input id="m-title" placeholder="notun adı" />
-    <label>Etiket</label>
-    <input id="m-tag" placeholder="proje, fikir, kişi, kaynak…" />
-    <label>Bağlantılar</label>
-    <div class="combo-row">
-      <input id="m-link-combo" list="node-title-options" placeholder="mevcut notlardan seç" />
-      <button class="btn-sec" id="m-link-add" type="button"><i class="ti ti-plus"></i> Ekle</button>
-    </div>
-    <datalist id="node-title-options"></datalist>
-    <div class="selected-links" id="m-selected-links"></div>
-    <label>İçerik (markdown)</label>
-    <div class="md-tools">
-      <button class="btn-sec" id="m-image-btn" type="button"><i class="ti ti-photo-plus"></i> Görsel ekle</button>
-      <input class="hidden-file" id="m-image" type="file" accept="image/*" />
-    </div>
-    <textarea id="m-body" placeholder="**kalın**, *italic*, ## başlık, \`kod\`, - liste"></textarea>
     <div class="modal-actions">
       <button class="btn-sec" id="m-cancel">İptal</button>
       <button class="btn-primary" id="m-save">Kaydet</button>
@@ -813,21 +847,6 @@ document.getElementById('m-file').addEventListener('change', async e => {
   if (!titleEl.value.trim()) titleEl.value = titleFromFile(file.name, content);
 });
 
-document.getElementById('m-image-btn').addEventListener('click', () => {
-  document.getElementById('m-image').click();
-});
-document.getElementById('m-image').addEventListener('change', e => {
-  insertImageIntoTextarea(e.target.files[0], 'm-body');
-  e.target.value = '';
-});
-document.getElementById('note-image-btn').addEventListener('click', () => {
-  document.getElementById('note-image').click();
-});
-document.getElementById('note-image').addEventListener('change', e => {
-  insertImageIntoTextarea(e.target.files[0], 'note-edit-body');
-  e.target.value = '';
-});
-
 document.getElementById('m-link-add').addEventListener('click', addModalLinkFromInput);
 document.getElementById('m-link-combo').addEventListener('keydown', e => {
   if (e.key === 'Enter') {
@@ -908,34 +927,6 @@ function titleFromFile(filename, content) {
   const heading = content.match(/^#\s+(.+)$/m);
   if (heading) return heading[1].trim();
   return filename.replace(/\.(md|markdown)$/i, '').replace(/[-_]+/g, ' ').trim();
-}
-
-function insertAtCursor(textarea, text) {
-  const start = textarea.selectionStart ?? textarea.value.length;
-  const end = textarea.selectionEnd ?? textarea.value.length;
-  textarea.value = textarea.value.slice(0, start) + text + textarea.value.slice(end);
-  textarea.selectionStart = textarea.selectionEnd = start + text.length;
-  textarea.focus();
-}
-
-function insertImageIntoTextarea(file, textareaId) {
-  if (!file) return;
-  if (!file.type.startsWith('image/')) {
-    alert('Lütfen bir görsel dosyası seç.');
-    return;
-  }
-  if (file.size > 1_500_000) {
-    alert('Görsel çok büyük. Şimdilik 1.5 MB altı bir görsel seç.');
-    return;
-  }
-
-  const reader = new FileReader();
-  reader.onload = () => {
-    const textarea = document.getElementById(textareaId);
-    const alt = file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ');
-    insertAtCursor(textarea, `\n![${alt}](${reader.result})\n`);
-  };
-  reader.readAsDataURL(file);
 }
 
 function escapeHtml(value) {
