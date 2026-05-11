@@ -184,20 +184,22 @@ svg#graph:active{cursor:grabbing;}
 .note-related-title{font-size:11px;color:var(--text3);font-family:monospace;font-weight:700;letter-spacing:.06em;margin-bottom:8px;}
 .note-related a{display:block;color:#185FA5;text-decoration:none;font-size:14px;padding:5px 0;}
 .note-related a:hover{text-decoration:underline;}
-.note-edit{display:none;margin-top:22px;}
+.note-edit{display:none;margin-top:12px;}
 .note-edit.open{display:block;}
-.note-edit label{font-size:11px;color:var(--text3);font-family:monospace;display:block;margin-bottom:4px;}
-.note-edit input,.note-edit textarea{
-  width:100%;font-size:14px;padding:9px 10px;
+.note-edit label{font-size:11px;color:var(--text3);font-family:monospace;display:block;margin:0 0 4px;}
+.note-edit input{
+  width:100%;font-size:14px;padding:8px 10px;
   border:1px solid var(--bd2);border-radius:var(--r);
   background:var(--bg2);color:var(--text);margin-bottom:12px;font-family:inherit;
 }
-.note-edit #note-edit-title{
-  font-size:34px;line-height:1.15;font-weight:700;padding:8px 0;
-  background:transparent;border:none;border-bottom:1px solid var(--bd);border-radius:0;
-}
 .note-edit #note-edit-tag{max-width:360px;}
-.note-edit textarea{min-height:62dvh;resize:vertical;font-family:monospace;font-size:15px;line-height:1.65;}
+.note-open-title[contenteditable="true"],.note-body[contenteditable="true"]{
+  outline:none;border:1px solid transparent;border-radius:var(--r);
+}
+.note-open-title[contenteditable="true"]:focus,.note-body[contenteditable="true"]:focus{
+  border-color:var(--bd2);box-shadow:0 0 0 3px var(--bg2);
+}
+.note-body[contenteditable="true"]{min-height:52dvh;padding:10px;margin:0 -10px;}
 .note-edit-actions{display:flex;gap:8px;justify-content:flex-end;position:sticky;bottom:0;background:var(--bg);padding:12px 0 0;margin-top:4px;border-top:1px solid var(--bd);}
 
 @media (max-width: 900px) {
@@ -213,8 +215,7 @@ svg#graph:active{cursor:grabbing;}
   .note-top{align-items:flex-start;flex-direction:column;}
   .note-actions{width:100%;justify-content:space-between;}
   .note-open-title{font-size:28px;}
-  .note-edit #note-edit-title{font-size:28px;}
-  .note-edit textarea{min-height:52dvh;}
+  .note-body[contenteditable="true"]{min-height:48dvh;}
 }
 
 @media (max-width: 560px) {
@@ -289,12 +290,8 @@ svg#graph:active{cursor:grabbing;}
       <div class="note-related" id="note-open-related"></div>
     </div>
     <div class="note-edit" id="note-edit">
-      <label>Başlık</label>
-      <input id="note-edit-title" />
       <label>Etiket</label>
       <input id="note-edit-tag" />
-      <label>İçerik (markdown)</label>
-      <textarea id="note-edit-body"></textarea>
       <div class="note-edit-actions">
         <button class="btn-sec" id="note-edit-cancel" type="button">İptal</button>
         <button class="btn-primary" id="note-edit-save" type="button">Kaydet</button>
@@ -362,6 +359,7 @@ let modalLinks = [];
 let modalContent = '';
 let notePageMode = false;
 let currentNotePageId = null;
+let editSnapshot = null;
 const NODE_W = 120;
 const NODE_H = 44;
 const LAYOUT_KEY = 'kg-node-positions-v1';
@@ -643,6 +641,8 @@ function renderNotePage(noteId) {
 
   document.getElementById('note-view').style.display = 'block';
   document.getElementById('note-edit').classList.remove('open');
+  setEditable(false);
+  editSnapshot = null;
   document.getElementById('note-back').href = graphUrl();
   page.classList.add('open');
   document.body.style.overflow = 'auto';
@@ -724,28 +724,36 @@ window.openByTitle = function(title) {
 function openInlineEditor() {
   const note = nodes.find(n => String(n.id) === String(currentNotePageId));
   if (!note) return;
-  document.getElementById('note-view').style.display = 'none';
+  editSnapshot = {
+    title: document.getElementById('note-open-title').textContent,
+    body: document.getElementById('note-open-body').innerHTML,
+    tag: note.tag || '',
+  };
+  setEditable(true);
   document.getElementById('note-edit').classList.add('open');
-  document.getElementById('note-edit-title').value = note.title || '';
   document.getElementById('note-edit-tag').value = note.tag || '';
-  document.getElementById('note-edit-body').value = note.content || '';
-  document.getElementById('note-edit-body').focus();
+  document.getElementById('note-open-body').focus();
 }
 
 document.getElementById('note-edit-btn').addEventListener('click', openInlineEditor);
 
 document.getElementById('note-edit-cancel').addEventListener('click', () => {
+  if (editSnapshot) {
+    document.getElementById('note-open-title').textContent = editSnapshot.title;
+    document.getElementById('note-open-body').innerHTML = editSnapshot.body;
+  }
+  setEditable(false);
   document.getElementById('note-edit').classList.remove('open');
-  document.getElementById('note-view').style.display = 'block';
+  editSnapshot = null;
 });
 
 document.getElementById('note-edit-save').addEventListener('click', async () => {
   const note = nodes.find(n => String(n.id) === String(currentNotePageId));
   if (!note) return;
 
-  const title = document.getElementById('note-edit-title').value.trim();
+  const title = document.getElementById('note-open-title').textContent.trim();
   const tag = document.getElementById('note-edit-tag').value.trim();
-  const content = document.getElementById('note-edit-body').value.trim();
+  const content = htmlToMarkdown(document.getElementById('note-open-body')).trim();
   if (!title) return;
 
   const oldTitle = note.title;
@@ -774,6 +782,73 @@ document.getElementById('note-edit-save').addEventListener('click', async () => 
   history.replaceState(null, '', noteUrl(updated.id));
   renderNotePage(updated.id);
 });
+
+function setEditable(on) {
+  document.getElementById('note-open-title').contentEditable = on ? 'true' : 'false';
+  document.getElementById('note-open-body').contentEditable = on ? 'true' : 'false';
+  document.getElementById('note-edit-btn').style.display = on ? 'none' : 'inline-flex';
+  document.getElementById('note-open-related').style.display = on ? 'none' : '';
+}
+
+function inlineMarkdown(text) {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/`(.*?)`/g, '$1')
+    .trim();
+}
+
+function htmlToMarkdown(root) {
+  const lines = [];
+
+  function walk(node, prefix = '') {
+    if (node.nodeType === Node.TEXT_NODE) return node.textContent;
+    if (node.nodeType !== Node.ELEMENT_NODE) return '';
+
+    const tag = node.tagName.toLowerCase();
+    const text = () => Array.from(node.childNodes).map(child => walk(child, prefix)).join('').trim();
+
+    if (tag === 'h1') lines.push(`# ${text()}`);
+    else if (tag === 'h2') lines.push(`## ${text()}`);
+    else if (tag === 'h3') lines.push(`### ${text()}`);
+    else if (tag === 'p') lines.push(text());
+    else if (tag === 'blockquote') lines.push(`> ${text()}`);
+    else if (tag === 'pre') lines.push(`\`\`\`\n${node.innerText.trim()}\n\`\`\``);
+    else if (tag === 'ul' || tag === 'ol') {
+      Array.from(node.children).forEach((li, i) => {
+        const marker = tag === 'ol' ? `${i + 1}.` : '-';
+        lines.push(`${marker} ${inlineMarkdown(li.innerText)}`);
+      });
+    } else if (tag === 'img') {
+      lines.push(`![${node.alt || 'görsel'}](${node.getAttribute('src') || ''})`);
+    } else if (tag === 'table') {
+      const rows = Array.from(node.querySelectorAll('tr')).map(tr =>
+        Array.from(tr.children).map(cell => inlineMarkdown(cell.innerText)).join(' | ')
+      );
+      if (rows.length) {
+        lines.push(`| ${rows[0]} |`);
+        lines.push(`| ${rows[0].split('|').map(() => '---').join(' | ')} |`);
+        rows.slice(1).forEach(row => lines.push(`| ${row} |`));
+      }
+    } else if (tag === 'strong' || tag === 'b') return `**${text()}**`;
+    else if (tag === 'em' || tag === 'i') return `*${text()}*`;
+    else if (tag === 'code') return `\`${node.textContent}\``;
+    else if (tag === 'a') return `[${text()}](${node.getAttribute('href') || ''})`;
+    else if (tag === 'br') return '\n';
+    else return text();
+    return '';
+  }
+
+  Array.from(root.childNodes).forEach(node => {
+    const value = walk(node);
+    if (value.trim()) lines.push(value.trim());
+  });
+
+  return lines
+    .map(line => line.trim())
+    .filter(Boolean)
+    .join('\n\n');
+}
 
 function updateNodeStates() {
   if (!nodeSel) return;
