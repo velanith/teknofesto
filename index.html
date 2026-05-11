@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Knowledge Graph</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --bg:#ffffff;--bg2:#f5f4f0;--bg3:#eeedea;
+  --text:#1a1a18;--text2:#6b6b67;--text3:#9c9a92;
+  --bd:#e0dfd8;--bd2:#c8c7bf;--r:8px;
+}
+@media(prefers-color-scheme:dark){
+  :root{--bg:#1a1a18;--bg2:#232320;--bg3:#2a2a27;--text:#e8e6de;--text2:#a8a69e;--text3:#6b6b67;--bd:#2e2e2b;--bd2:#3d3d3a;}
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);height:100dvh;overflow:hidden;}
+
+/* Lock */
+#lock-screen{display:flex;align-items:center;justify-content:center;height:100dvh;flex-direction:column;}
+.lock-title{font-size:24px;font-weight:700;margin-bottom:6px;letter-spacing:-.02em;}
+.lock-sub{font-size:12px;color:var(--text3);margin-bottom:36px;font-family:monospace;}
+.dots{display:flex;gap:14px;justify-content:center;margin-bottom:12px;}
+.dot{
+  width:48px;height:48px;border-radius:50%;cursor:pointer;
+  border:2.5px solid transparent;
+  transition:transform .15s,box-shadow .15s;
+  position:relative;display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;font-family:monospace;
+}
+.dot:hover{transform:scale(1.08);}
+.dot.active{box-shadow:0 0 0 3px var(--bg),0 0 0 5.5px var(--dot-color,#888);}
+.dot-name{
+  position:absolute;bottom:-22px;left:50%;transform:translateX(-50%);
+  font-size:10px;color:var(--text3);white-space:nowrap;font-family:monospace;
+}
+.lock-hint{font-size:11px;color:var(--text3);margin-top:28px;font-family:monospace;}
+
+/* App */
+#app{display:none;flex-direction:column;height:100dvh;}
+#toolbar{
+  display:flex;align-items:center;gap:8px;
+  padding:9px 14px;border-bottom:1px solid var(--bd);
+  background:var(--bg);
+}
+#toolbar h2{font-size:12px;font-weight:500;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;flex:1;}
+#user-badge{
+  display:flex;align-items:center;gap:6px;
+  font-size:12px;font-family:monospace;color:var(--text2);
+  padding:3px 10px;border-radius:20px;border:1px solid var(--bd2);
+}
+#user-dot{width:10px;height:10px;border-radius:50%;}
+.tb-btn{
+  font-size:12px;padding:5px 11px;background:transparent;
+  border:1px solid var(--bd2);border-radius:var(--r);
+  color:var(--text2);cursor:pointer;transition:all .15s;
+  display:flex;align-items:center;gap:5px;
+}
+.tb-btn:hover{background:var(--bg2);color:var(--text);}
+#live-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+#main{display:flex;flex:1;overflow:hidden;}
+#graph-area{flex:1;position:relative;overflow:hidden;}
+svg#graph{width:100%;height:100%;cursor:grab;}
+svg#graph:active{cursor:grabbing;}
+.glink{stroke:var(--bd2);stroke-width:1.2;fill:none;opacity:.65;}
+.glabel{font-size:10px;fill:var(--text3);font-family:monospace;pointer-events:none;}
+.gnode circle{stroke-width:1.5;cursor:pointer;}
+.gnode.selected circle{stroke-width:3;filter:drop-shadow(0 0 8px var(--glow,#888));}
+.gnode text{font-size:11px;font-weight:600;pointer-events:none;user-select:none;}
+
+/* Panel */
+#panel{width:0;overflow:hidden;border-left:1px solid var(--bd);background:var(--bg);transition:width .22s;display:flex;flex-direction:column;}
+#panel.open{width:300px;}
+#panel-header{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid var(--bd);min-width:300px;}
+#panel-title{font-size:14px;font-weight:600;}
+#panel-close{background:none;border:none;cursor:pointer;font-size:20px;color:var(--text3);line-height:1;}
+#panel-close:hover{color:var(--text);}
+#panel-content{flex:1;overflow-y:auto;padding:16px;min-width:300px;}
+#panel-content h1{font-size:20px;font-weight:700;margin-bottom:10px;line-height:1.3;}
+#panel-content h2{font-size:16px;font-weight:700;margin:14px 0 6px;}
+#panel-content h3{font-size:14px;font-weight:600;margin:10px 0 4px;}
+#panel-content p{font-size:13px;line-height:1.65;color:var(--text2);margin-bottom:8px;}
+#panel-content ul,#panel-content ol{font-size:13px;line-height:1.65;color:var(--text2);margin:0 0 8px 16px;}
+#panel-content code{font-family:monospace;font-size:11px;background:var(--bg2);padding:1px 5px;border-radius:3px;}
+#panel-content pre{background:var(--bg2);border-radius:var(--r);padding:10px;overflow-x:auto;margin-bottom:8px;}
+#panel-content pre code{background:none;padding:0;}
+#panel-content blockquote{border-left:3px solid var(--bd2);padding-left:10px;margin:0 0 8px;color:var(--text3);font-style:italic;}
+#panel-content strong{color:var(--text);font-weight:700;}
+#panel-content hr{border:none;border-top:1px solid var(--bd);margin:12px 0;}
+#panel-content table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:10px;}
+#panel-content th,#panel-content td{padding:5px 8px;border:1px solid var(--bd);text-align:left;}
+#panel-content th{background:var(--bg2);font-weight:600;}
+.tag-chip{display:inline-block;font-size:10px;padding:2px 9px;border-radius:20px;margin:0 4px 10px 0;font-family:monospace;border:1px solid;}
+.author-chip{display:inline-flex;align-items:center;gap:5px;font-size:10px;padding:2px 9px;border-radius:20px;margin-bottom:12px;font-family:monospace;border:1px solid var(--bd2);color:var(--text3);}
+.author-chip-dot{width:8px;height:8px;border-radius:50%;}
+.related-block{margin-top:14px;padding-top:12px;border-top:1px solid var(--bd);}
+.related-block p{font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.06em;margin-bottom:6px;}
+.related-link{display:block;font-size:12px;color:#185FA5;padding:3px 0;cursor:pointer;}
+.related-link:hover{text-decoration:underline;}
+.panel-del{margin-top:14px;padding-top:12px;border-top:1px solid var(--bd);}
+.del-btn{font-size:11px;color:#e24b4a;background:none;border:1px solid #f09595;border-radius:var(--r);padding:4px 12px;cursor:pointer;}
+.del-btn:hover{background:#fcebeb;}
+
+#hint{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--text3);pointer-events:none;font-family:monospace;white-space:nowrap;}
+#loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--text3);font-family:monospace;background:var(--bg);}
+
+/* Add modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100;align-items:center;justify-content:center;}
+.modal-bg.show{display:flex;}
+.modal-box{background:var(--bg);border-radius:12px;border:1px solid var(--bd);padding:22px 24px;width:380px;max-width:94vw;}
+.modal-box h3{font-size:15px;font-weight:600;margin-bottom:14px;}
+.modal-box label{font-size:11px;color:var(--text3);font-family:monospace;display:block;margin-bottom:4px;}
+.modal-box input,.modal-box textarea{
+  width:100%;font-size:13px;padding:8px 10px;
+  border:1px solid var(--bd2);border-radius:var(--r);
+  background:var(--bg2);color:var(--text);margin-bottom:12px;
+  font-family:inherit;
+}
+.modal-box textarea{height:120px;resize:vertical;font-family:monospace;font-size:12px;}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;}
+.btn-primary{font-size:12px;padding:6px 16px;border-radius:var(--r);cursor:pointer;background:var(--text);color:var(--bg);border:none;font-weight:600;}
+.btn-sec{font-size:12px;padding:6px 14px;border-radius:var(--r);cursor:pointer;background:transparent;color:var(--text2);border:1px solid var(--bd2);}
+</style>
+</head>
+<body>
+
+<!-- ── LOCK SCREEN ── -->
+<div id="lock-screen">
+  <div class="lock-title">Knowledge Graph</div>
+  <div class="lock-sub">rengini seç, gir</div>
+  <div class="dots" id="dots-container"></div>
+  <div class="lock-hint" id="lock-hint">bir renk seç</div>
+</div>
+
+<!-- ── APP ── -->
+<div id="app">
+  <div id="toolbar">
+    <h2>Knowledge Graph</h2>
+    <div id="user-badge"><div id="user-dot"></div><span id="user-name"></span></div>
+    <div id="live-dot" title="canlı bağlantı"></div>
+    <button class="tb-btn" id="add-btn"><i class="ti ti-plus"></i> Yeni not</button>
+    <button class="tb-btn" id="lock-btn"><i class="ti ti-lock"></i></button>
+  </div>
+  <div id="main">
+    <div id="graph-area">
+      <svg id="graph"></svg>
+      <div id="loading">yükleniyor…</div>
+      <div id="hint">tıkla → içerik · sürükle → konum · scroll → zoom</div>
+    </div>
+    <div id="panel">
+      <div id="panel-header">
+        <span id="panel-title"></span>
+        <button id="panel-close">×</button>
+      </div>
+      <div id="panel-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── ADD NODE MODAL ── -->
+<div class="modal-bg" id="add-modal">
+  <div class="modal-box">
+    <h3>Yeni Not</h3>
+    <label>Başlık</label>
+    <input id="m-title" placeholder="notun adı" />
+    <label>Etiket</label>
+    <input id="m-tag" placeholder="proje, fikir, kişi, kaynak…" />
+    <label>Bağlantılar (virgülle, başlık tam eşleşmeli)</label>
+    <input id="m-links" placeholder="Başlık1, Başlık2" />
+    <label>İçerik (markdown)</label>
+    <textarea id="m-body" placeholder="**kalın**, *italic*, ## başlık, \`kod\`, - liste"></textarea>
+    <div class="modal-actions">
+      <button class="btn-sec" id="m-cancel">İptal</button>
+      <button class="btn-primary" id="m-save">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────
+const SUPABASE_URL  = 'https://unxyujcyomzjfpzksbjf.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVueHl1amN5b216amZwemtzYmpmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0OTcyNTgsImV4cCI6MjA5NDA3MzI1OH0.5kHixsH8YUBMrV-CxqaJ5VmiXmWKrQOZW2Ycr0KtPLE';
+
+// 5 kullanıcı — isim ve renk kodunu değiştir
+const USERS = [
+  { name: 'emre', color: '#534AB7', bg: '#EEEDFE', text: '#3C3489', code: 'mor2025'   },
+  { name: 'ata efe', color: '#0F6E56', bg: '#E1F5EE', text: '#085041', code: 'yesil2025' },
+  { name: 'sinem', color: '#854F0B', bg: '#FAEEDA', text: '#633806', code: 'sari2025'  },
+  { name: 'fatma', color: '#185FA5', bg: '#E6F1FB', text: '#0C447C', code: 'mavi2025'  },
+  { name: 'nisa', color: '#993556', bg: '#FBEAF0', text: '#72243E', code: 'pembe2025' },
+];
+// ────────────────────────────────────────────────────────
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+let currentUser = null;
+let nodes = [], edges = [], simulation;
+let svgSel, gSel, linkSel, nodeSel;
+let selectedId = null;
+
+// ── LOCK SCREEN ─────────────────────────────────────────
+const dotsEl = document.getElementById('dots-container');
+const hintEl = document.getElementById('lock-hint');
+
+USERS.forEach((u, i) => {
+  const dot = document.createElement('div');
+  dot.className = 'dot';
+  dot.style.background = u.bg;
+  dot.style.border = `2.5px solid ${u.color}`;
+  dot.style.setProperty('--dot-color', u.color);
+  dot.innerHTML = `<span class="dot-name">${u.name}</span>`;
+  dot.addEventListener('click', () => {
+    document.querySelectorAll('.dot').forEach(d => d.classList.remove('active'));
+    dot.classList.add('active');
+    hintEl.innerHTML = `<b>${u.name}</b> seçildi — kod: <span style="font-family:monospace;background:var(--bg2);padding:1px 6px;border-radius:4px">${u.code}</span> &nbsp;<button onclick="tryEnter()" style="font-size:11px;padding:3px 10px;background:var(--text);color:var(--bg);border:none;border-radius:4px;cursor:pointer;margin-left:6px">Giriş →</button>`;
+    currentUser = u;
+  });
+  dotsEl.appendChild(dot);
+});
+
+function tryEnter() {
+  if (!currentUser) return;
+  document.getElementById('lock-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  document.getElementById('user-dot').style.background = currentUser.color;
+  document.getElementById('user-name').textContent = currentUser.name;
+  initGraph();
+}
+
+// ── LOCK BUTTON ──────────────────────────────────────────
+document.getElementById('lock-btn').addEventListener('click', () => {
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('lock-screen').style.display = 'flex';
+  document.querySelectorAll('.dot').forEach(d => d.classList.remove('active'));
+  hintEl.textContent = 'bir renk seç';
+  currentUser = null;
+  closePanel();
+});
+
+// ── SUPABASE HELPERS ─────────────────────────────────────
+async function fetchAll() {
+  const [{ data: n }, { data: e }] = await Promise.all([
+    sb.from('nodes').select('*').order('created_at'),
+    sb.from('edges').select('*').order('created_at'),
+  ]);
+  return { nodes: n || [], edges: e || [] };
+}
+
+function relatedTitles(title) {
+  return edges.reduce((acc, e) => {
+    if (e.source === title) acc.push(e.target);
+    else if (e.target === title) acc.push(e.source);
+    return acc;
+  }, []);
+}
+
+// ── GRAPH INIT ───────────────────────────────────────────
+async function initGraph() {
+  const data = await fetchAll();
+  nodes = data.nodes.map(n => ({ ...n, x: undefined, y: undefined }));
+  edges = data.edges;
+  document.getElementById('loading').style.display = 'none';
+  buildGraph();
+  subscribeRealtime();
+}
+
+function buildGraph() {
+  const area = document.getElementById('graph-area');
+  const W = area.clientWidth, H = area.clientHeight;
+
+  svgSel = d3.select('#graph');
+  svgSel.selectAll('*').remove();
+  gSel = svgSel.append('g');
+
+  svgSel.call(
+    d3.zoom().scaleExtent([.2, 4])
+      .on('zoom', e => gSel.attr('transform', e.transform))
+  );
+
+  const linkData = edges.map(e => ({ ...e }));
+  const nodeData = nodes.map(n => ({ ...n }));
+
+  simulation = d3.forceSimulation(nodeData)
+    .force('link', d3.forceLink(linkData).id(d => d.title).distance(150))
+    .force('charge', d3.forceManyBody().strength(-380))
+    .force('center', d3.forceCenter(W / 2, H / 2))
+    .force('collision', d3.forceCollide(58));
+
+  linkSel = gSel.append('g').selectAll('line')
+    .data(linkData).join('line').attr('class', 'glink');
+
+  const labelSel = gSel.append('g').selectAll('text')
+    .data(linkData).join('text')
+    .attr('class', 'glabel').attr('text-anchor', 'middle')
+    .text(d => d.label || '');
+
+  nodeSel = gSel.append('g').selectAll('g')
+    .data(nodeData).join('g')
+    .attr('class', 'gnode')
+    .call(d3.drag()
+      .on('start', (e, d) => { if (!e.active) simulation.alphaTarget(.3).restart(); d.fx = d.x; d.fy = d.y; })
+      .on('drag',  (e, d) => { d.fx = e.x; d.fy = e.y; })
+      .on('end',   (e, d) => { if (!e.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; })
+    )
+    .on('click', (e, d) => { e.stopPropagation(); openPanel(d); });
+
+  nodeSel.append('circle')
+    .attr('r', d => 30 + relatedTitles(d.title).length * 4)
+    .attr('fill',   d => userOf(d.author_code).bg)
+    .attr('stroke', d => userOf(d.author_code).color)
+    .attr('stroke-width', 1.5);
+
+  nodeSel.append('text')
+    .attr('text-anchor', 'middle').attr('dy', '0.35em')
+    .style('fill',        d => userOf(d.author_code).text)
+    .style('font-size',   '11px').style('font-weight', '600')
+    .text(d => d.title.length > 13 ? d.title.slice(0, 12) + '…' : d.title);
+
+  simulation.on('tick', () => {
+    linkSel.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+            .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+    labelSel.attr('x', d => (d.source.x + d.target.x) / 2)
+             .attr('y', d => (d.source.y + d.target.y) / 2 - 6);
+    nodeSel.attr('transform', d => `translate(${d.x},${d.y})`);
+  });
+
+  svgSel.on('click', () => closePanel());
+
+  // restore selected
+  if (selectedId) {
+    const n = nodeData.find(x => x.id === selectedId);
+    if (n) openPanel(n);
+  }
+}
+
+function userOf(code) {
+  return USERS.find(u => u.code === code) || USERS[0];
+}
+
+// ── REALTIME ─────────────────────────────────────────────
+function subscribeRealtime() {
+  sb.channel('kg-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'nodes' }, refresh)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'edges' }, refresh)
+    .subscribe();
+}
+
+async function refresh() {
+  const data = await fetchAll();
+  // preserve positions
+  const posMap = {};
+  if (nodeSel) nodeSel.each(d => { posMap[d.id] = { x: d.x, y: d.y }; });
+  nodes = data.nodes.map(n => ({ ...n, x: posMap[n.id]?.x, y: posMap[n.id]?.y }));
+  edges = data.edges;
+  buildGraph();
+}
+
+// ── PANEL ────────────────────────────────────────────────
+function openPanel(d) {
+  selectedId = d.id;
+  nodeSel.classed('selected', nd => nd.id === d.id);
+  const u = userOf(d.author_code);
+  document.querySelector('#graph-area svg').style.setProperty('--glow', u.color);
+
+  document.getElementById('panel-title').textContent = d.title;
+
+  const tagHtml = d.tag
+    ? `<span class="tag-chip" style="background:${u.bg};color:${u.text};border-color:${u.color}">${d.tag}</span>`
+    : '';
+  const authorHtml = `<span class="author-chip"><span class="author-chip-dot" style="background:${u.color}"></span>${u.name}</span>`;
+  const body = marked.parse(d.content || '');
+  const rel  = relatedTitles(d.title);
+  const relHtml = rel.length
+    ? `<div class="related-block"><p>BAĞLANTILI NOTLAR</p>${rel.map(t => `<span class="related-link" onclick="openByTitle('${t.replace(/'/g,"\\'")}')">→ ${t}</span>`).join('')}</div>`
+    : '';
+
+  const canDelete = currentUser && currentUser.code === d.author_code;
+  const delHtml = canDelete
+    ? `<div class="panel-del"><button class="del-btn" onclick="deleteNode('${d.id}','${d.title.replace(/'/g,"\\'")}')"><i class="ti ti-trash"></i> Bu notu sil</button></div>`
+    : '';
+
+  document.getElementById('panel-content').innerHTML = tagHtml + authorHtml + body + relHtml + delHtml;
+  document.getElementById('panel').classList.add('open');
+}
+
+function closePanel() {
+  document.getElementById('panel').classList.remove('open');
+  selectedId = null;
+  if (nodeSel) nodeSel.classed('selected', false);
+}
+document.getElementById('panel-close').addEventListener('click', closePanel);
+
+window.openByTitle = function(title) {
+  if (!nodeSel) return;
+  nodeSel.each(d => { if (d.title === title) openPanel(d); });
+};
+
+// ── ADD NODE ─────────────────────────────────────────────
+document.getElementById('add-btn').addEventListener('click', () => {
+  document.getElementById('add-modal').classList.add('show');
+  document.getElementById('m-title').focus();
+});
+document.getElementById('m-cancel').addEventListener('click', () => {
+  document.getElementById('add-modal').classList.remove('show');
+});
+
+document.getElementById('m-save').addEventListener('click', async () => {
+  const title   = document.getElementById('m-title').value.trim();
+  const tag     = document.getElementById('m-tag').value.trim();
+  const linksRaw= document.getElementById('m-links').value.trim();
+  const content = document.getElementById('m-body').value.trim();
+  if (!title) return;
+
+  const { data: inserted, error } = await sb.from('nodes').insert({
+    title, tag, content, author_code: currentUser.code
+  }).select().single();
+
+  if (!error && linksRaw) {
+    const targets = linksRaw.split(',').map(s => s.trim()).filter(Boolean);
+    const validTargets = targets.filter(t => nodes.find(n => n.title === t));
+    if (validTargets.length) {
+      await sb.from('edges').insert(
+        validTargets.map(t => ({ source: title, target: t, label: '' }))
+      );
+    }
+  }
+
+  document.getElementById('add-modal').classList.remove('show');
+  ['m-title','m-tag','m-links','m-body'].forEach(id => document.getElementById(id).value = '');
+});
+
+// ── DELETE NODE ──────────────────────────────────────────
+window.deleteNode = async function(id, title) {
+  if (!confirm(`"${title}" silinsin mi?`)) return;
+  await sb.from('edges').delete().or(`source.eq.${title},target.eq.${title}`);
+  await sb.from('nodes').delete().eq('id', id);
+  closePanel();
+};
+</script>
+</body>
+</html>
