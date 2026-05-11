@@ -20,40 +20,25 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);height:100dvh;overflow:hidden;}
 
-/* Lock */
-#lock-screen{display:flex;align-items:center;justify-content:center;height:100dvh;flex-direction:column;}
-.lock-title{font-size:24px;font-weight:700;margin-bottom:6px;letter-spacing:-.02em;}
-.lock-sub{font-size:12px;color:var(--text3);margin-bottom:36px;font-family:monospace;}
-.dots{display:flex;gap:14px;justify-content:center;margin-bottom:12px;}
-.dot{
-  width:48px;height:48px;border-radius:50%;cursor:pointer;
-  border:2.5px solid transparent;
-  transition:transform .15s,box-shadow .15s;
-  position:relative;display:flex;align-items:center;justify-content:center;
-  font-size:11px;font-weight:700;font-family:monospace;
-}
-.dot:hover{transform:scale(1.08);}
-.dot.active{box-shadow:0 0 0 3px var(--bg),0 0 0 5.5px var(--dot-color,#888);}
-.dot-name{
-  position:absolute;bottom:-22px;left:50%;transform:translateX(-50%);
-  font-size:10px;color:var(--text3);white-space:nowrap;font-family:monospace;
-}
-.lock-hint{font-size:11px;color:var(--text3);margin-top:28px;font-family:monospace;}
-
 /* App */
-#app{display:none;flex-direction:column;height:100dvh;}
+#app{display:flex;flex-direction:column;height:100dvh;}
 #toolbar{
   display:flex;align-items:center;gap:8px;
   padding:9px 14px;border-bottom:1px solid var(--bd);
   background:var(--bg);
 }
 #toolbar h2{font-size:12px;font-weight:500;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;flex:1;}
-#user-badge{
+#user-picker{
   display:flex;align-items:center;gap:6px;
-  font-size:12px;font-family:monospace;color:var(--text2);
-  padding:3px 10px;border-radius:20px;border:1px solid var(--bd2);
+  padding:3px 8px;border-radius:20px;border:1px solid var(--bd2);
 }
-#user-dot{width:10px;height:10px;border-radius:50%;}
+.user-choice{
+  width:16px;height:16px;border-radius:50%;cursor:pointer;
+  border:2px solid var(--bg);box-shadow:0 0 0 1px var(--bd2);
+  transition:transform .15s,box-shadow .15s;
+}
+.user-choice:hover{transform:scale(1.12);}
+.user-choice.active{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--choice-color,#888);}
 .tb-btn{
   font-size:12px;padding:5px 11px;background:transparent;
   border:1px solid var(--bd2);border-radius:var(--r);
@@ -70,8 +55,9 @@ svg#graph{width:100%;height:100%;cursor:grab;}
 svg#graph:active{cursor:grabbing;}
 .glink{stroke:var(--bd2);stroke-width:1.2;fill:none;opacity:.65;}
 .glabel{font-size:10px;fill:var(--text3);font-family:monospace;pointer-events:none;}
-.gnode circle{stroke-width:1.5;cursor:pointer;}
-.gnode.selected circle{stroke-width:3;filter:drop-shadow(0 0 8px var(--glow,#888));}
+.gnode rect{stroke-width:1.5;cursor:pointer;}
+.gnode.selected rect{stroke-width:3;filter:drop-shadow(0 0 8px var(--glow,#888));}
+.gnode.link-source rect{stroke-width:3;stroke-dasharray:5 3;}
 .gnode text{font-size:11px;font-weight:600;pointer-events:none;user-select:none;}
 
 /* Panel */
@@ -103,6 +89,11 @@ svg#graph:active{cursor:grabbing;}
 .related-block p{font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.06em;margin-bottom:6px;}
 .related-link{display:block;font-size:12px;color:#185FA5;padding:3px 0;cursor:pointer;}
 .related-link:hover{text-decoration:underline;}
+.link-tools{margin-top:14px;padding-top:12px;border-top:1px solid var(--bd);display:flex;gap:8px;flex-wrap:wrap;}
+.link-btn{font-size:11px;color:var(--text);background:var(--bg2);border:1px solid var(--bd2);border-radius:var(--r);padding:4px 12px;cursor:pointer;}
+.link-btn:hover{background:var(--bg3);}
+.link-btn.cancel{color:#e24b4a;border-color:#f09595;background:transparent;}
+.link-btn.cancel:hover{background:#fcebeb;}
 .panel-del{margin-top:14px;padding-top:12px;border-top:1px solid var(--bd);}
 .del-btn{font-size:11px;color:#e24b4a;background:none;border:1px solid #f09595;border-radius:var(--r);padding:4px 12px;cursor:pointer;}
 .del-btn:hover{background:#fcebeb;}
@@ -123,29 +114,62 @@ svg#graph:active{cursor:grabbing;}
   font-family:inherit;
 }
 .modal-box textarea{height:120px;resize:vertical;font-family:monospace;font-size:12px;}
+.file-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.file-row input{display:none;}
+.file-name{font-size:11px;color:var(--text3);font-family:monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.combo-row{display:flex;gap:8px;margin-bottom:8px;}
+.combo-row input{margin-bottom:0;}
+.combo-row button{flex:0 0 auto;}
+.selected-links{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;min-height:22px;}
+.selected-link{
+  display:inline-flex;align-items:center;gap:5px;
+  max-width:100%;font-size:11px;padding:3px 8px;border-radius:20px;
+  border:1px solid var(--bd2);background:var(--bg2);color:var(--text2);
+}
+.selected-link span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.selected-link button{border:none;background:none;color:var(--text3);cursor:pointer;font-size:14px;line-height:1;}
+.selected-link button:hover{color:var(--text);}
 .modal-actions{display:flex;gap:8px;justify-content:flex-end;}
 .btn-primary{font-size:12px;padding:6px 16px;border-radius:var(--r);cursor:pointer;background:var(--text);color:var(--bg);border:none;font-weight:600;}
 .btn-sec{font-size:12px;padding:6px 14px;border-radius:var(--r);cursor:pointer;background:transparent;color:var(--text2);border:1px solid var(--bd2);}
+
+/* Note page */
+#note-page{display:none;height:100dvh;overflow-y:auto;background:var(--bg);}
+#note-page.open{display:block;}
+.note-shell{width:min(860px,calc(100vw - 32px));margin:0 auto;padding:24px 0 56px;}
+.note-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:18px;border-bottom:1px solid var(--bd);}
+.note-back{font-size:12px;color:var(--text2);text-decoration:none;border:1px solid var(--bd2);border-radius:var(--r);padding:6px 12px;display:inline-flex;align-items:center;gap:6px;}
+.note-back:hover{background:var(--bg2);color:var(--text);}
+.note-open-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.note-open-title{font-size:34px;line-height:1.15;margin:28px 0 12px;letter-spacing:0;}
+.note-body{font-size:16px;line-height:1.75;color:var(--text2);}
+.note-body h1{font-size:30px;line-height:1.2;color:var(--text);margin:20px 0 12px;}
+.note-body h2{font-size:22px;line-height:1.25;color:var(--text);margin:24px 0 10px;}
+.note-body h3{font-size:18px;line-height:1.3;color:var(--text);margin:18px 0 8px;}
+.note-body p,.note-body ul,.note-body ol{margin-bottom:12px;}
+.note-body ul,.note-body ol{padding-left:22px;}
+.note-body code{font-family:monospace;font-size:.9em;background:var(--bg2);padding:2px 5px;border-radius:4px;color:var(--text);}
+.note-body pre{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:12px;overflow:auto;margin-bottom:14px;}
+.note-body pre code{background:none;padding:0;}
+.note-body blockquote{border-left:3px solid var(--bd2);padding-left:12px;margin:0 0 14px;color:var(--text3);}
+.note-body table{width:100%;border-collapse:collapse;font-size:14px;margin-bottom:14px;}
+.note-body th,.note-body td{padding:7px 10px;border:1px solid var(--bd);text-align:left;}
+.note-related{margin-top:28px;padding-top:18px;border-top:1px solid var(--bd);}
+.note-related-title{font-size:11px;color:var(--text3);font-family:monospace;font-weight:700;letter-spacing:.06em;margin-bottom:8px;}
+.note-related a{display:block;color:#185FA5;text-decoration:none;font-size:14px;padding:5px 0;}
+.note-related a:hover{text-decoration:underline;}
 </style>
 </head>
 <body>
-
-<!-- ── LOCK SCREEN ── -->
-<div id="lock-screen">
-  <div class="lock-title">Knowledge Graph</div>
-  <div class="lock-sub">rengini seç, gir</div>
-  <div class="dots" id="dots-container"></div>
-  <div class="lock-hint" id="lock-hint">bir renk seç</div>
-</div>
 
 <!-- ── APP ── -->
 <div id="app">
   <div id="toolbar">
     <h2>Knowledge Graph</h2>
-    <div id="user-badge"><div id="user-dot"></div><span id="user-name"></span></div>
+    <div id="user-picker" aria-label="Kullanıcı seç"></div>
     <div id="live-dot" title="canlı bağlantı"></div>
+    <button class="tb-btn" id="reset-layout-btn" title="Dizilimi sıfırla"><i class="ti ti-layout-board-split"></i></button>
     <button class="tb-btn" id="add-btn"><i class="ti ti-plus"></i> Yeni not</button>
-    <button class="tb-btn" id="lock-btn"><i class="ti ti-lock"></i></button>
   </div>
   <div id="main">
     <div id="graph-area">
@@ -163,16 +187,40 @@ svg#graph:active{cursor:grabbing;}
   </div>
 </div>
 
+<!-- ── FULL NOTE PAGE ── -->
+<div id="note-page">
+  <div class="note-shell">
+    <div class="note-top">
+      <a class="note-back" id="note-back" href="./index.html"><i class="ti ti-arrow-left"></i> Grafa dön</a>
+      <div class="note-open-meta" id="note-open-meta"></div>
+    </div>
+    <h1 class="note-open-title" id="note-open-title"></h1>
+    <div class="note-body" id="note-open-body"></div>
+    <div class="note-related" id="note-open-related"></div>
+  </div>
+</div>
+
 <!-- ── ADD NODE MODAL ── -->
 <div class="modal-bg" id="add-modal">
   <div class="modal-box">
     <h3>Yeni Not</h3>
+    <label>Markdown dosyası</label>
+    <div class="file-row">
+      <button class="btn-sec" id="m-file-btn" type="button"><i class="ti ti-file-import"></i> MD seç</button>
+      <span class="file-name" id="m-file-name"></span>
+      <input id="m-file" type="file" accept=".md,.markdown,text/markdown,text/plain" />
+    </div>
     <label>Başlık</label>
     <input id="m-title" placeholder="notun adı" />
     <label>Etiket</label>
     <input id="m-tag" placeholder="proje, fikir, kişi, kaynak…" />
-    <label>Bağlantılar (virgülle, başlık tam eşleşmeli)</label>
-    <input id="m-links" placeholder="Başlık1, Başlık2" />
+    <label>Bağlantılar</label>
+    <div class="combo-row">
+      <input id="m-link-combo" list="node-title-options" placeholder="mevcut notlardan seç" />
+      <button class="btn-sec" id="m-link-add" type="button"><i class="ti ti-plus"></i> Ekle</button>
+    </div>
+    <datalist id="node-title-options"></datalist>
+    <div class="selected-links" id="m-selected-links"></div>
     <label>İçerik (markdown)</label>
     <textarea id="m-body" placeholder="**kalın**, *italic*, ## başlık, \`kod\`, - liste"></textarea>
     <div class="modal-actions">
@@ -203,45 +251,41 @@ let currentUser = null;
 let nodes = [], edges = [], simulation;
 let svgSel, gSel, linkSel, nodeSel;
 let selectedId = null;
+let linkModeSource = null;
+let modalLinks = [];
+let notePageMode = false;
+const NODE_W = 120;
+const NODE_H = 44;
+const LAYOUT_KEY = 'kg-node-positions-v1';
 
-// ── LOCK SCREEN ─────────────────────────────────────────
-const dotsEl = document.getElementById('dots-container');
-const hintEl = document.getElementById('lock-hint');
-
-USERS.forEach((u, i) => {
-  const dot = document.createElement('div');
-  dot.className = 'dot';
-  dot.style.background = u.bg;
-  dot.style.border = `2.5px solid ${u.color}`;
-  dot.style.setProperty('--dot-color', u.color);
-  dot.innerHTML = `<span class="dot-name">${u.name}</span>`;
-  dot.addEventListener('click', () => {
-    document.querySelectorAll('.dot').forEach(d => d.classList.remove('active'));
-    dot.classList.add('active');
-    hintEl.innerHTML = `<b>${u.name}</b> seçildi — kod: <span style="font-family:monospace;background:var(--bg2);padding:1px 6px;border-radius:4px">${u.code}</span> &nbsp;<button onclick="tryEnter()" style="font-size:11px;padding:3px 10px;background:var(--text);color:var(--bg);border:none;border-radius:4px;cursor:pointer;margin-left:6px">Giriş →</button>`;
-    currentUser = u;
+// ── USER PICKER ─────────────────────────────────────────
+function setCurrentUser(user) {
+  currentUser = user;
+  localStorage.setItem('kg-current-user', user.code);
+  document.querySelectorAll('.user-choice').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.code === user.code);
   });
-  dotsEl.appendChild(dot);
-});
-
-function tryEnter() {
-  if (!currentUser) return;
-  document.getElementById('lock-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'flex';
-  document.getElementById('user-dot').style.background = currentUser.color;
-  document.getElementById('user-name').textContent = currentUser.name;
-  initGraph();
 }
 
-// ── LOCK BUTTON ──────────────────────────────────────────
-document.getElementById('lock-btn').addEventListener('click', () => {
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('lock-screen').style.display = 'flex';
-  document.querySelectorAll('.dot').forEach(d => d.classList.remove('active'));
-  hintEl.textContent = 'bir renk seç';
-  currentUser = null;
-  closePanel();
-});
+function initUserPicker() {
+  const picker = document.getElementById('user-picker');
+  const savedCode = localStorage.getItem('kg-current-user');
+  currentUser = USERS.find(u => u.code === savedCode) || USERS[0];
+
+  USERS.forEach(u => {
+    const btn = document.createElement('button');
+    btn.className = 'user-choice';
+    btn.type = 'button';
+    btn.dataset.code = u.code;
+    btn.title = u.name;
+    btn.style.background = u.color;
+    btn.style.setProperty('--choice-color', u.color);
+    btn.addEventListener('click', () => setCurrentUser(u));
+    picker.appendChild(btn);
+  });
+
+  setCurrentUser(currentUser);
+}
 
 // ── SUPABASE HELPERS ─────────────────────────────────────
 async function fetchAll() {
@@ -260,12 +304,52 @@ function relatedTitles(title) {
   }, []);
 }
 
+function noteUrl(id) {
+  const base = location.href.split('?')[0].split('#')[0];
+  return `${base}?note=${encodeURIComponent(id)}`;
+}
+
+function graphUrl() {
+  return location.href.split('?')[0].split('#')[0];
+}
+
+function loadPositions() {
+  try {
+    return JSON.parse(localStorage.getItem(LAYOUT_KEY) || '{}');
+  } catch {
+    return {};
+  }
+}
+
+function saveNodePosition(d) {
+  if (!d?.id || !Number.isFinite(d.x) || !Number.isFinite(d.y)) return;
+  const positions = loadPositions();
+  positions[d.id] = { x: d.x, y: d.y };
+  localStorage.setItem(LAYOUT_KEY, JSON.stringify(positions));
+}
+
+function applySavedPosition(node, positions) {
+  const pos = positions[node.id];
+  if (!pos) return node;
+  return { ...node, x: pos.x, y: pos.y, fx: pos.x, fy: pos.y };
+}
+
 // ── GRAPH INIT ───────────────────────────────────────────
 async function initGraph() {
   const data = await fetchAll();
-  nodes = data.nodes.map(n => ({ ...n, x: undefined, y: undefined }));
+  const positions = loadPositions();
+  nodes = data.nodes.map(n => applySavedPosition(n, positions));
   edges = data.edges;
+
+  const noteId = new URLSearchParams(location.search).get('note');
+  if (noteId) {
+    notePageMode = true;
+    renderNotePage(noteId);
+    return;
+  }
+
   document.getElementById('loading').style.display = 'none';
+  renderNodeTitleOptions();
   buildGraph();
   subscribeRealtime();
 }
@@ -290,7 +374,7 @@ function buildGraph() {
     .force('link', d3.forceLink(linkData).id(d => d.title).distance(150))
     .force('charge', d3.forceManyBody().strength(-380))
     .force('center', d3.forceCenter(W / 2, H / 2))
-    .force('collision', d3.forceCollide(58));
+    .force('collision', d3.forceCollide(76));
 
   linkSel = gSel.append('g').selectAll('line')
     .data(linkData).join('line').attr('class', 'glink');
@@ -306,12 +390,29 @@ function buildGraph() {
     .call(d3.drag()
       .on('start', (e, d) => { if (!e.active) simulation.alphaTarget(.3).restart(); d.fx = d.x; d.fy = d.y; })
       .on('drag',  (e, d) => { d.fx = e.x; d.fy = e.y; })
-      .on('end',   (e, d) => { if (!e.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; })
+      .on('end',   (e, d) => {
+        if (!e.active) simulation.alphaTarget(0);
+        d.fx = d.x;
+        d.fy = d.y;
+        saveNodePosition(d);
+      })
     )
-    .on('click', (e, d) => { e.stopPropagation(); openPanel(d); });
+    .on('click', (e, d) => {
+      e.stopPropagation();
+      if (linkModeSource) {
+        addEdgeFromSource(d);
+        return;
+      }
+      openPanel(d);
+    });
 
-  nodeSel.append('circle')
-    .attr('r', d => 30 + relatedTitles(d.title).length * 4)
+  nodeSel.append('rect')
+    .attr('x', -NODE_W / 2)
+    .attr('y', -NODE_H / 2)
+    .attr('width', NODE_W)
+    .attr('height', NODE_H)
+    .attr('rx', 4)
+    .attr('ry', 4)
     .attr('fill',   d => userOf(d.author_code).bg)
     .attr('stroke', d => userOf(d.author_code).color)
     .attr('stroke-width', 1.5);
@@ -320,7 +421,7 @@ function buildGraph() {
     .attr('text-anchor', 'middle').attr('dy', '0.35em')
     .style('fill',        d => userOf(d.author_code).text)
     .style('font-size',   '11px').style('font-weight', '600')
-    .text(d => d.title.length > 13 ? d.title.slice(0, 12) + '…' : d.title);
+    .text(d => truncateTitle(d.title));
 
   simulation.on('tick', () => {
     linkSel.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
@@ -330,17 +431,24 @@ function buildGraph() {
     nodeSel.attr('transform', d => `translate(${d.x},${d.y})`);
   });
 
-  svgSel.on('click', () => closePanel());
+  svgSel.on('click', () => {
+    if (!linkModeSource) closePanel();
+  });
 
   // restore selected
   if (selectedId) {
     const n = nodeData.find(x => x.id === selectedId);
     if (n) openPanel(n);
   }
+  updateNodeStates();
 }
 
 function userOf(code) {
   return USERS.find(u => u.code === code) || USERS[0];
+}
+
+function truncateTitle(title) {
+  return title.length > 15 ? title.slice(0, 14) + '…' : title;
 }
 
 // ── REALTIME ─────────────────────────────────────────────
@@ -352,23 +460,62 @@ function subscribeRealtime() {
 }
 
 async function refresh() {
+  if (notePageMode) return;
   const data = await fetchAll();
   // preserve positions
-  const posMap = {};
+  const posMap = loadPositions();
   if (nodeSel) nodeSel.each(d => { posMap[d.id] = { x: d.x, y: d.y }; });
-  nodes = data.nodes.map(n => ({ ...n, x: posMap[n.id]?.x, y: posMap[n.id]?.y }));
+  nodes = data.nodes.map(n => applySavedPosition(n, posMap));
   edges = data.edges;
+  renderNodeTitleOptions();
   buildGraph();
+}
+
+function renderNotePage(noteId) {
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('add-modal').classList.remove('show');
+  const page = document.getElementById('note-page');
+  const note = nodes.find(n => String(n.id) === String(noteId));
+
+  document.getElementById('note-back').href = graphUrl();
+  page.classList.add('open');
+  document.body.style.overflow = 'auto';
+
+  if (!note) {
+    document.getElementById('note-open-meta').innerHTML = '';
+    document.getElementById('note-open-title').textContent = 'Not bulunamadi';
+    document.getElementById('note-open-body').innerHTML = '<p>Bu not silinmis veya URL gecersiz olabilir.</p>';
+    document.getElementById('note-open-related').innerHTML = '';
+    document.title = 'Not bulunamadi';
+    return;
+  }
+
+  const u = userOf(note.author_code);
+  const tagHtml = note.tag
+    ? `<span class="tag-chip" style="background:${u.bg};color:${u.text};border-color:${u.color}">${escapeHtml(note.tag)}</span>`
+    : '';
+  const authorHtml = `<span class="author-chip"><span class="author-chip-dot" style="background:${u.color}"></span>${escapeHtml(u.name)}</span>`;
+  const rel = relatedTitles(note.title)
+    .map(title => nodes.find(n => n.title === title))
+    .filter(Boolean);
+
+  document.getElementById('note-open-meta').innerHTML = tagHtml + authorHtml;
+  document.getElementById('note-open-title').textContent = note.title;
+  document.getElementById('note-open-body').innerHTML = marked.parse(note.content || '');
+  document.getElementById('note-open-related').innerHTML = rel.length
+    ? `<div class="note-related-title">BAĞLANTILI NOTLAR</div>${rel.map(n => `<a href="${noteUrl(n.id)}">→ ${escapeHtml(n.title)}</a>`).join('')}`
+    : '';
+  document.title = `${note.title} · Knowledge Graph`;
 }
 
 // ── PANEL ────────────────────────────────────────────────
 function openPanel(d) {
   selectedId = d.id;
-  nodeSel.classed('selected', nd => nd.id === d.id);
   const u = userOf(d.author_code);
   document.querySelector('#graph-area svg').style.setProperty('--glow', u.color);
 
   document.getElementById('panel-title').textContent = d.title;
+  updateNodeStates();
 
   const tagHtml = d.tag
     ? `<span class="tag-chip" style="background:${u.bg};color:${u.text};border-color:${u.color}">${d.tag}</span>`
@@ -379,20 +526,25 @@ function openPanel(d) {
   const relHtml = rel.length
     ? `<div class="related-block"><p>BAĞLANTILI NOTLAR</p>${rel.map(t => `<span class="related-link" onclick="openByTitle('${t.replace(/'/g,"\\'")}')">→ ${t}</span>`).join('')}</div>`
     : '';
+  const openHtml = `<div class="link-tools"><button class="link-btn" onclick="openNotePage('${d.id}')"><i class="ti ti-external-link"></i> Yeni sayfada aç</button></div>`;
+  const linkHtml = linkModeSource?.id === d.id
+    ? `<div class="link-tools"><button class="link-btn cancel" onclick="cancelLinkMode()">İptal</button></div>`
+    : `<div class="link-tools"><button class="link-btn" onclick="startLinkMode('${d.id}')"><i class="ti ti-link"></i> Bu nota bağlantı ekle</button></div>`;
 
   const canDelete = currentUser && currentUser.code === d.author_code;
   const delHtml = canDelete
     ? `<div class="panel-del"><button class="del-btn" onclick="deleteNode('${d.id}','${d.title.replace(/'/g,"\\'")}')"><i class="ti ti-trash"></i> Bu notu sil</button></div>`
     : '';
 
-  document.getElementById('panel-content').innerHTML = tagHtml + authorHtml + body + relHtml + delHtml;
+  document.getElementById('panel-content').innerHTML = tagHtml + authorHtml + body + openHtml + linkHtml + relHtml + delHtml;
   document.getElementById('panel').classList.add('open');
 }
 
 function closePanel() {
+  cancelLinkMode(false);
   document.getElementById('panel').classList.remove('open');
   selectedId = null;
-  if (nodeSel) nodeSel.classed('selected', false);
+  updateNodeStates();
 }
 document.getElementById('panel-close').addEventListener('click', closePanel);
 
@@ -401,19 +553,98 @@ window.openByTitle = function(title) {
   nodeSel.each(d => { if (d.title === title) openPanel(d); });
 };
 
+window.openNotePage = function(id) {
+  window.open(noteUrl(id), '_blank');
+};
+
+function updateNodeStates() {
+  if (!nodeSel) return;
+  nodeSel
+    .classed('selected', d => d.id === selectedId)
+    .classed('link-source', d => linkModeSource && d.id === linkModeSource.id);
+}
+
+window.startLinkMode = function(id) {
+  const source = nodes.find(n => n.id === id);
+  if (!source) return;
+  linkModeSource = source;
+  selectedId = source.id;
+  document.getElementById('hint').textContent = `"${source.title}" için bağlanacak notu seç · iptal için paneldeki buton`;
+  updateNodeStates();
+  openPanel(source);
+};
+
+window.cancelLinkMode = function(redraw = true) {
+  linkModeSource = null;
+  document.getElementById('hint').textContent = 'tıkla → içerik · sürükle → konum · scroll → zoom';
+  updateNodeStates();
+  if (redraw && selectedId) {
+    const selected = nodes.find(n => n.id === selectedId);
+    if (selected && document.getElementById('panel').classList.contains('open')) openPanel(selected);
+  }
+};
+
+async function addEdgeFromSource(target) {
+  if (!linkModeSource || target.id === linkModeSource.id) return;
+  const sourceTitle = linkModeSource.title;
+  const targetTitle = target.title;
+  const exists = edges.some(e =>
+    (e.source === sourceTitle && e.target === targetTitle) ||
+    (e.source === targetTitle && e.target === sourceTitle)
+  );
+
+  if (!exists) {
+    await sb.from('edges').insert({ source: sourceTitle, target: targetTitle, label: '' });
+  }
+
+  const source = linkModeSource;
+  cancelLinkMode(false);
+  openPanel(source);
+  refresh();
+}
+
 // ── ADD NODE ─────────────────────────────────────────────
+document.getElementById('reset-layout-btn').addEventListener('click', () => {
+  localStorage.removeItem(LAYOUT_KEY);
+  nodes = nodes.map(n => ({ ...n, x: undefined, y: undefined, fx: null, fy: null }));
+  closePanel();
+  buildGraph();
+});
+
 document.getElementById('add-btn').addEventListener('click', () => {
+  renderNodeTitleOptions();
   document.getElementById('add-modal').classList.add('show');
   document.getElementById('m-title').focus();
 });
 document.getElementById('m-cancel').addEventListener('click', () => {
-  document.getElementById('add-modal').classList.remove('show');
+  closeAddModal();
+});
+
+document.getElementById('m-file-btn').addEventListener('click', () => {
+  document.getElementById('m-file').click();
+});
+
+document.getElementById('m-file').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const content = await file.text();
+  const titleEl = document.getElementById('m-title');
+  document.getElementById('m-file-name').textContent = file.name;
+  document.getElementById('m-body').value = content;
+  if (!titleEl.value.trim()) titleEl.value = titleFromFile(file.name, content);
+});
+
+document.getElementById('m-link-add').addEventListener('click', addModalLinkFromInput);
+document.getElementById('m-link-combo').addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    addModalLinkFromInput();
+  }
 });
 
 document.getElementById('m-save').addEventListener('click', async () => {
   const title   = document.getElementById('m-title').value.trim();
   const tag     = document.getElementById('m-tag').value.trim();
-  const linksRaw= document.getElementById('m-links').value.trim();
   const content = document.getElementById('m-body').value.trim();
   if (!title) return;
 
@@ -421,9 +652,8 @@ document.getElementById('m-save').addEventListener('click', async () => {
     title, tag, content, author_code: currentUser.code
   }).select().single();
 
-  if (!error && linksRaw) {
-    const targets = linksRaw.split(',').map(s => s.trim()).filter(Boolean);
-    const validTargets = targets.filter(t => nodes.find(n => n.title === t));
+  if (!error && modalLinks.length) {
+    const validTargets = modalLinks.filter(t => nodes.find(n => n.title === t));
     if (validTargets.length) {
       await sb.from('edges').insert(
         validTargets.map(t => ({ source: title, target: t, label: '' }))
@@ -431,9 +661,66 @@ document.getElementById('m-save').addEventListener('click', async () => {
     }
   }
 
-  document.getElementById('add-modal').classList.remove('show');
-  ['m-title','m-tag','m-links','m-body'].forEach(id => document.getElementById(id).value = '');
+  closeAddModal();
 });
+
+function renderNodeTitleOptions() {
+  const list = document.getElementById('node-title-options');
+  if (!list) return;
+  list.innerHTML = nodes
+    .map(n => `<option value="${escapeHtml(n.title)}"></option>`)
+    .join('');
+}
+
+function addModalLinkFromInput() {
+  const input = document.getElementById('m-link-combo');
+  const title = input.value.trim();
+  if (!title) return;
+  const node = nodes.find(n => n.title.toLocaleLowerCase('tr') === title.toLocaleLowerCase('tr'));
+  if (!node || modalLinks.includes(node.title)) {
+    input.value = '';
+    return;
+  }
+  modalLinks.push(node.title);
+  input.value = '';
+  renderSelectedLinks();
+}
+
+function renderSelectedLinks() {
+  const box = document.getElementById('m-selected-links');
+  box.innerHTML = modalLinks.map(title => `
+    <span class="selected-link">
+      <span>${escapeHtml(title)}</span>
+      <button type="button" onclick="removeModalLink(${escapeHtml(JSON.stringify(title))})">×</button>
+    </span>
+  `).join('');
+}
+
+window.removeModalLink = function(title) {
+  modalLinks = modalLinks.filter(t => t !== title);
+  renderSelectedLinks();
+};
+
+function closeAddModal() {
+  document.getElementById('add-modal').classList.remove('show');
+  ['m-title','m-tag','m-link-combo','m-body'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('m-file').value = '';
+  document.getElementById('m-file-name').textContent = '';
+  modalLinks = [];
+  renderSelectedLinks();
+}
+
+function titleFromFile(filename, content) {
+  const heading = content.match(/^#\s+(.+)$/m);
+  if (heading) return heading[1].trim();
+  return filename.replace(/\.(md|markdown)$/i, '').replace(/[-_]+/g, ' ').trim();
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[ch]));
+}
 
 // ── DELETE NODE ──────────────────────────────────────────
 window.deleteNode = async function(id, title) {
@@ -442,6 +729,9 @@ window.deleteNode = async function(id, title) {
   await sb.from('nodes').delete().eq('id', id);
   closePanel();
 };
+
+initUserPicker();
+initGraph();
 </script>
 </body>
 </html>
