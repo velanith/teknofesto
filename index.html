@@ -88,11 +88,12 @@ svg#graph:active{cursor:grabbing;}
 #panel-title{font-size:14px;font-weight:600;}
 #panel-close{background:none;border:none;cursor:pointer;font-size:20px;color:var(--text3);line-height:1;}
 #panel-close:hover{color:var(--text);}
-#panel-content{flex:1;overflow-y:auto;padding:20px;min-width:0;width:100%;}
+#panel-content{flex:1;overflow-y:auto;overflow-x:hidden;padding:20px;min-width:0;width:100%;}
+#panel-content>*{max-width:100%;}
 #panel-content h1{font-size:20px;font-weight:700;margin-bottom:10px;line-height:1.3;}
 #panel-content h2{font-size:16px;font-weight:700;margin:14px 0 6px;}
 #panel-content h3{font-size:14px;font-weight:600;margin:10px 0 4px;}
-#panel-content p{font-size:13px;line-height:1.65;color:var(--text2);margin-bottom:8px;}
+#panel-content p{font-size:13px;line-height:1.65;color:var(--text2);margin-bottom:8px;overflow-wrap:anywhere;}
 #panel-content ul,#panel-content ol{font-size:13px;line-height:1.65;color:var(--text2);margin:0 0 8px 16px;}
 #panel-content code{font-family:monospace;font-size:11px;background:var(--bg2);padding:1px 5px;border-radius:3px;}
 #panel-content pre{background:var(--bg2);border-radius:var(--r);padding:10px;overflow-x:auto;margin-bottom:8px;}
@@ -100,7 +101,8 @@ svg#graph:active{cursor:grabbing;}
 #panel-content blockquote{border-left:3px solid var(--bd2);padding-left:10px;margin:0 0 8px;color:var(--text3);font-style:italic;}
 #panel-content strong{color:var(--text);font-weight:700;}
 #panel-content hr{border:none;border-top:1px solid var(--bd);margin:12px 0;}
-#panel-content table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:10px;}
+#panel-content img{display:block;max-width:100%;height:auto;border-radius:var(--r);border:1px solid var(--bd);margin:10px 0;}
+#panel-content table{width:100%;max-width:100%;border-collapse:collapse;font-size:12px;margin-bottom:10px;table-layout:fixed;}
 #panel-content th,#panel-content td{padding:5px 8px;border:1px solid var(--bd);text-align:left;}
 #panel-content th{background:var(--bg2);font-weight:600;}
 .tag-chip{display:inline-block;font-size:10px;padding:2px 9px;border-radius:20px;margin:0 4px 10px 0;font-family:monospace;border:1px solid;}
